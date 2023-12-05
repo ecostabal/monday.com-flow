@@ -6,7 +6,7 @@
   "dependencies": {
     "axios": "^0.27.2",
     "@google-cloud/functions-framework": "^3.0.0",
-    "qs": "^6.11.0"
+    "crypto-js": "^3.3.0"
   },
   "engines": {
     "node": "14.x"
