@@ -87,7 +87,7 @@ exports.generarLinkPagoFlow = async (req, res) => {
         console.log("Respuesta de Monday.com:", mondayResponse.data);
 
         const columnsData = mondayResponse.data.data.items[0].column_values;
-        const montoColumn = columnsData.find(column => column.id === 'n_meros03');
+        const montoColumn = columnsData.find(column => column.id === 'f_rmula0');
         const descripcionColumn = columnsData.find(column => column.id === 'ubicaci_n');
         const emailColumn = columnsData.find(column => column.id === 'correo_electr_nico');
         const ordenTrabajoColumn = columnsData.find(column => column.id === 'id__de_elemento1')
