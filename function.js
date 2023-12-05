@@ -53,6 +53,7 @@ async function crearOrdenDePago(ordenCobro) {
     }
 }
 
+
 // Función principal para manejar webhooks de Monday.com y generar link de pago con Flow
 exports.generarLinkPagoFlow = async (req, res) => {
     try {
@@ -86,24 +87,42 @@ exports.generarLinkPagoFlow = async (req, res) => {
 
         console.log("Respuesta de Monday.com:", mondayResponse.data);
 
+        // Supongamos que estas son las respuestas de las columnas de Monday.com
         const columnsData = mondayResponse.data.data.items[0].column_values;
-        const montoColumn = columnsData.find(column => column.id === 'f_rmula0');
+
+        // Extraer los valores de las columnas
+        const valorArriendoColumn = columnsData.find(column => column.id === 'n_meros');
+        const comisionRateColumn = columnsData.find(column => column.id === 'n_meros0');
+        const gastoNotarialColumn = columnsData.find(column => column.id === 'n_meros9');
+
+        // Convertir los valores a números
+        const valorArriendo = parseFloat(valorArriendoColumn.text);
+        const comisionRate = parseFloat(comisionRateColumn.text) / 100;
+        const gastoNotarial = parseFloat(gastoNotarialColumn.text);
+
+        // Calcular Comisión Arriendo
+        const comisionArriendo = valorArriendo * comisionRate;
+
+        // Calcular Subtotal
+        const subtotal = comisionArriendo + gastoNotarial;
+
+        // Calcular IVA
+        const iva = subtotal * 0.19;
+
+        // Calcular Total
+        const montoTotal = subtotal + iva;
+
         const descripcionColumn = columnsData.find(column => column.id === 'ubicaci_n');
         const emailColumn = columnsData.find(column => column.id === 'correo_electr_nico');
         const ordenTrabajoColumn = columnsData.find(column => column.id === 'id__de_elemento1')
 
-        if (!montoColumn || !descripcionColumn || !emailColumn) {
+        if (!descripcionColumn || !emailColumn) {
             throw new Error('Datos necesarios no están presentes en el evento');
-        }
-
-        const monto = parseFloat(montoColumn.text);
-        if (isNaN(monto)) {
-            throw new Error('El monto no es un número válido');
         }
 
         const descripcion = descripcionColumn.text;
         const email = emailColumn.text;
-        const ordenNumber = ordenTrabajoColumn.text
+        const ordenNumber = ordenTrabajoColumn.text;
 
         // Creación de la orden de pago para Flow
         const ordenCobro = {
@@ -111,7 +130,7 @@ exports.generarLinkPagoFlow = async (req, res) => {
             commerceOrder: ordenNumber, // Asegúrate de reemplazar esto con un valor adecuado
             subject: descripcion,
             currency: 'CLP',
-            amount: monto,
+            amount: montoTotal,
             email: email,
             urlConfirmation: 'https://tuservidor.com/confirmacion-pago', // URL de confirmación
             urlReturn: 'https://tuservidor.com/confirmacion-pago', // URL de retorno
