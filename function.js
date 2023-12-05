@@ -122,21 +122,22 @@ exports.generarLinkPagoFlow = async (req, res) => {
         const tokenPago = await crearOrdenDePago(ordenCobro);
 
         // Construir la URL de redirección
-        const urlRedireccion = `sandbox.flow.cl/app/web/pay.php?token=${tokenPago}`; // Reemplaza con tu URL de redirección
+        const urlRedireccion = `https://sandbox.flow.cl/app/web/pay.php?token=${tokenPago}`; // Reemplaza con tu URL de redirección
 
         // Actualizar el enlace en Monday.com
         await axios.post('https://api.monday.com/v2/', {
             query: `mutation { 
-                change_column_value (board_id: 5598495616, item_id: ${itemId}, column_id: "enlace", value: "{\"url\": \"${urlRedireccion}\"}") { 
+                change_simple_column_value (item_id: ${itemId}, board_id: 5598495616, column_id: "enlace", value: "${urlRedireccion} Link de Pago") { 
                     id 
                 } 
             }`
         }, {
             headers: {
-                'Authorization': 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjIzMjg3MzUyNCwiYWFpIjoxMSwidWlkIjoyMzUzNzM2NCwiaWFkIjoiMjAyMy0wMS0zMVQyMTowMjoxNy4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6OTUwNzUxNiwicmduIjoidXNlMSJ9.lX1RYu90B2JcH0QxITaF8ymd4d6dBes0FJHPI1mzSRE', // Reemplaza con tu API Key de Monday (almacenado en variables de entorno)
+                'Authorization': 'eyJhbGciOiJIUzI1NiJ9.eyJ0aWQiOjIzMjg3MzUyNCwiYWFpIjoxMSwidWlkIjoyMzUzNzM2NCwiaWFkIjoiMjAyMy0wMS0zMVQyMTowMjoxNy4wMDBaIiwicGVyIjoibWU6d3JpdGUiLCJhY3RpZCI6OTUwNzUxNiwicmduIjoidXNlMSJ9.lX1RYu90B2JcH0QxITaF8ymd4d6dBes0FJHPI1mzSRE',
                 'Content-Type': 'application/json'
             }
         });
+        
 
         res.json({ mensaje: "Link de pago generado y actualizado en Monday.com", linkDePago: urlRedireccion });
     } catch (error) {
