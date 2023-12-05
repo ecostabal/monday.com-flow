@@ -133,7 +133,7 @@ exports.generarLinkPagoFlow = async (req, res) => {
             amount: montoTotal,
             email: email,
             urlConfirmation: 'https://tuservidor.com/confirmacion-pago', // URL de confirmación
-            urlReturn: 'https://tuservidor.com/confirmacion-pago', // URL de retorno
+            urlReturn: 'https://payments.urbx.io', // URL de retorno
             // Agrega aquí cualquier otro parámetro necesario
         };
 
