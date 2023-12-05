@@ -1,6 +1,6 @@
 const axios = require('axios');
 const CryptoJS = require('crypto-js');
-const qs = require('qs'); // Asegúrate de tener instalado este paquete
+const qs = require('qs');
 
 // Configuración de Flow
 const flowConfig = {
@@ -11,15 +11,49 @@ const flowConfig = {
 
 // Función para firmar los parámetros con secretKey
 const firmarParametros = (parametros, secretKey) => {
-    const stringToSign = Object.keys(parametros)
+    // Ordena los parámetros alfabéticamente
+    const orderedParams = Object.keys(parametros)
         .sort()
         .map(key => key + parametros[key])
         .join('');
 
-    return CryptoJS.HmacSHA256(stringToSign, secretKey).toString(CryptoJS.enc.Hex);
+    // Firma la cadena ordenada utilizando HMAC-SHA256 y la secretKey
+    return CryptoJS.HmacSHA256(orderedParams, secretKey).toString(CryptoJS.enc.Hex);
 };
 
-// Función para manejar webhooks de Monday.com y generar link de pago con Flow
+// Función para crear una orden de pago
+async function crearOrdenDePago(ordenCobro) {
+    try {
+        // Firma de los parámetros con tu secretKey de Flow
+        ordenCobro.s = firmarParametros(ordenCobro, flowConfig.secretKey);
+
+        // Realiza una solicitud POST a la API de Flow para crear la orden de pago
+        const flowResponse = await axios.post('https://sandbox.flow.cl/api/payment/create', qs.stringify(ordenCobro), {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+
+        // Verifica si se obtuvo una respuesta válida de Flow
+        if (!flowResponse.data || !flowResponse.data.token) {
+            throw new Error('No se pudo obtener el token de pago de Flow');
+        }
+
+        // Procesa la respuesta de Flow (por ejemplo, redirecciona al usuario a la página de pago)
+        const token = flowResponse.data.token;
+        console.log('Token de pago de Flow:', token);
+
+        // Aquí puedes realizar acciones adicionales según tus necesidades, como redirigir al usuario a la página de pago de Flow.
+
+        return token; // Retorna el token de pago si es necesario
+
+    } catch (error) {
+        console.error('Error al hacer la solicitud a Flow:', error);
+        throw error; // Lanza el error para manejarlo en la función principal
+    }
+}
+
+// Función principal para manejar webhooks de Monday.com y generar link de pago con Flow
 exports.generarLinkPagoFlow = async (req, res) => {
     try {
         console.log("Inicio de la función");
@@ -84,53 +118,11 @@ exports.generarLinkPagoFlow = async (req, res) => {
             // Agrega aquí cualquier otro parámetro necesario
         };
 
-        // Función para crear una orden de pago
-        async function crearOrdenDePago() {
-            try {
-                // Realiza una solicitud POST a la API de Flow para crear la orden de pago
-                const flowResponse = await axios.post('https://www.flow.cl/api/payment/create', qs.stringify(ordenCobro), {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    }
-                });
-
-                // Verifica si se obtuvo una respuesta válida de Flow
-                if (!flowResponse.data || !flowResponse.data.token) {
-                    throw new Error('No se pudo obtener el token de pago de Flow');
-                }
-
-                // Procesa la respuesta de Flow (por ejemplo, redirecciona al usuario a la página de pago)
-                const token = flowResponse.data.token;
-                console.log('Token de pago de Flow:', token);
-
-                // Aquí puedes realizar acciones adicionales según tus necesidades, como redirigir al usuario a la página de pago de Flow.
-
-            } catch (error) {
-                console.error('Error al hacer la solicitud a Flow:', error);
-                // Maneja el error de manera adecuada (por ejemplo, envía una respuesta de error al cliente).
-            }
-        }
-
         // Llama a la función para crear la orden de pago
-        crearOrdenDePago();
-
-        // Firma de los parámetros con tu secretKey de Flow
-        ordenCobro.s = firmarParametros(ordenCobro, flowConfig.secretKey);
-
-        // Envío de la orden de pago a Flow
-        let flowResponse = await axios.post('https://www.flow.cl/api/payment/create', qs.stringify(ordenCobro), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        });
-
-        if (!flowResponse.data || !flowResponse.data.token) {
-            throw new Error('No se pudo obtener el token de pago de Flow');
-        }
+        const tokenPago = await crearOrdenDePago(ordenCobro);
 
         // Construir la URL de redirección
-        const token = flowResponse.data.token
-        const urlRedireccion = `sandbox.flow.cl/app/web/pay.php?token=${token}`; // Reemplaza con tu URL de redirección
+        const urlRedireccion = `sandbox.flow.cl/app/web/pay.php?token=${tokenPago}`; // Reemplaza con tu URL de redirección
 
         // Actualizar el enlace en Monday.com
         await axios.post('https://api.monday.com/v2/', {
