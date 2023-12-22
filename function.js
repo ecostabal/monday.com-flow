@@ -101,13 +101,13 @@ exports.generarLinkPagoFlow = async (req, res) => {
         const gastoNotarial = parseFloat(gastoNotarialColumn.text);
 
         // Calcular Comisión Arriendo
-        const comisionArriendo = valorArriendo * comisionRate;
+        const comisionArriendo = Math.round(valorArriendo * comisionRate);
 
         // Calcular Subtotal
         const subtotal = comisionArriendo + gastoNotarial;
 
         // Calcular IVA
-        const iva = subtotal * 0.19;
+        const iva = Math.round(subtotal * 0.19);
 
         // Calcular Total
         const montoTotal = subtotal + iva;
